@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pedal Prowess Test</title>
+    <style>
+        #target-number {
+            color: black;
+            transition: color 0.3s;
+        }
+        #target-number.within-tolerance {
+            color: green;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .bar-container {
+            width: 300px;
+            height: 20px;
+            background-color: #eee;
+            margin: 5px 0;
+            position: relative;
+        }
+        .bar {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        .score {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .numbers {
+          
+            justify-content: space-between;
+            margin: 20px 0;
+            font-size: 24px;
+        }
+        .difficulty {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pedal Precision Practice</h1>
+    
+    <div class="difficulty">
+        Difficulty: 
+        <input type="radio" name="difficulty" value="easy" checked> Easy (±5%)
+        <input type="radio" name="difficulty" value="medium"> Medium (±2%)
+        <input type="radio" name="difficulty" value="hard"> Hard (±1%)
+        <div>Medium: also hide current value</div>
+        <div>Hard: you have to lift off from the pedals before getting the next value</div>
+    </div>
+
+    <div id="axes-container">
+        <div id="input-values"></div>
+        <div id="output-values"></div>
+    </div>
+
+    <div class="numbers">
+        <div>Target: <span id="target-number">0</span></div>
+        <div id="current-container">Current: <span id="largest-number">0</span></div>
+    </div>
+
+    <div class="score">Score: <span id="score">0</span> (average target hits    over the last minute)</div>
+
+    <script>
+        function getRandomChoice(arr) {
+            if (arr.length === 0) {
+                throw new Error("Array is empty");
+            }
+            const randomIndex = Math.floor(Math.random() * arr.length);
+            return arr[randomIndex];
+        }
+        let initialAxesValues = null;
+        let targetNumber = null;
+        let largestNumber = 0;
+        let score = 0;
+        let withinToleranceStartTime = null;
+        let successfulHits = []; // Array to store timestamps of successful hits
+
+        // Generate new target number between 20 and 80
+        function generateTarget(difficulty) {
+            if (largestNumber > 1 && difficulty == 'hard') {
+                document.getElementById('target-number').textContent = 'lift!';
+                return
+            }
+
+            targetNumber = Math.floor(1 + Math.random() * 20)*5 
+            document.getElementById('target-number').textContent = targetNumber;
+        }
+
+        // Initialize game
+        generateTarget();
+
+        // Initialize gamepad detection
+        window.addEventListener("gamepadconnected", (e) => {
+            console.log("Gamepad connected:", e.gamepad);
+            // Wait a brief moment to get stable initial values
+            setTimeout(() => {
+                const gamepad = navigator.getGamepads()[0];
+                initialAxesValues = gamepad.axes.map(axis => ((axis / 2.0 + 0.5) * 100) );
+                console.log("Initial axes values:", initialAxesValues);
+                requestAnimationFrame(updateAxisValues);
+            }, 1000);
+        });
+
+        // Main update loop
+        function updateAxisValues() {
+            const gamepads = navigator.getGamepads();
+            if (!gamepads || !initialAxesValues) {
+                requestAnimationFrame(updateAxisValues);
+                return;
+            }
+
+            const gamepad = gamepads[0];
+            if (!gamepad) {
+                requestAnimationFrame(updateAxisValues);
+                return;
+            }
+
+            let inputHtml = '';
+            let outputHtml = '';
+            let maxOutput = -Infinity;
+
+            gamepad.axes.forEach((axis, index) => {
+                // Convert from -1,1 to 0,100 range
+                const currentValue = (axis / 2.0 + 0.5) * 100;
+                const initialValue = initialAxesValues[index];
+                
+                // Calculate output based on requirements
+                let output = 0;
+                let f = ''
+                if (initialValue > 95 ) {
+                    output = 100 - currentValue
+                    f = ' A'
+                } else if (initialValue < 5) {
+                    output = currentValue
+                    f = ' B'
+                } else {
+                    output = Math.abs((currentValue-50) / 2 )
+                    f = ' C'
+                }
+                    
+
+                if (output > (maxOutput)) {
+                    maxOutput = output;
+                }
+
+                inputHtml += `
+                    <div class="axis-row">
+                        <span>Axis ${index}</span>
+                        <span class="value">Current: ${currentValue.toFixed(1)}% (Initial: ${initialValue.toFixed(1)}%)</span>
+                    </div>
+                `;
+                outputHtml += `
+                    <div class="axis-row">
+                        <span>Axis ${index}</span>
+                        <span class="value">Output: ${output.toFixed(1)} ${f}</span>
+                    </div>
+                `;
+            });
+
+            // Update largest number if the current max output is larger
+            
+            largestNumber = Math.abs(maxOutput);
+            document.getElementById('largest-number').textContent = largestNumber.toFixed(1);
+
+            
+
+            // Check score
+            const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const tolerance = selectedDifficulty === 'easy' ? 5 : selectedDifficulty === 'medium' ? 2 : 1;
+            
+            document.getElementById('current-container').style.display = selectedDifficulty === 'easy' ?  'block' : 'none';
+
+            const isWithinTolerance = Math.abs(Math.abs(maxOutput) - targetNumber) <= tolerance;
+            const currentTime = Date.now();
+            
+            document.getElementById('target-number').classList.toggle('within-tolerance', isWithinTolerance);
+            if (isWithinTolerance) {
+                if (withinToleranceStartTime === null) {
+                    withinToleranceStartTime = currentTime;
+                } else if (currentTime - withinToleranceStartTime >= 2000) { // 2 seconds
+                    // Record successful hit
+                    successfulHits.push(currentTime);
+                    
+                    // Remove hits older than 1 minute
+                    
+                    // Calculate moving average (hits per minute)
+
+                    
+                    targetNumber = null
+                    withinToleranceStartTime = null;
+                }
+            } else {
+                withinToleranceStartTime = null;
+            }
+            const oneMinuteAgo = currentTime - 60000;
+            successfulHits = successfulHits.filter(timestamp => timestamp > oneMinuteAgo);
+                    
+            score = successfulHits.length;
+            document.getElementById('score').textContent = score;
+            if (targetNumber == null) {
+                generateTarget(selectedDifficulty);
+            }
+            document.getElementById('input-values').innerHTML = inputHtml;
+            document.getElementById('output-values').innerHTML = outputHtml;
+
+            requestAnimationFrame(updateAxisValues);
+        }
+    </script>
+</body>
+</html>
