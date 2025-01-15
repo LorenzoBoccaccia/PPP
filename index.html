@@ -104,7 +104,7 @@
                 initialAxesValues = gamepad.axes.map(axis => ((axis / 2.0 + 0.5) * 100) );
                 console.log("Initial axes values:", initialAxesValues);
                 requestAnimationFrame(updateAxisValues);
-            }, 100);
+            }, 1000);
         });
 
         // Main update loop
