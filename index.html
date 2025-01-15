@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Pedal Precision Practice</title>
+    <title>Pedal Prowess Test</title>
     <style>
         #target-number {
             color: black;
@@ -45,9 +45,8 @@
 <body>
     <h1>Pedal Precision Practice</h1>
     
-
     <div class="difficulty">
-        <div>Put your controls neutral and press a button</div>
+        <h3>Get your controller neutral and press a button</h3>
         Difficulty: 
         <input type="radio" name="difficulty" value="easy" checked> Easy (±5%)
         <input type="radio" name="difficulty" value="medium"> Medium (±2%)
@@ -55,7 +54,7 @@
         <div>Medium: also hide current value</div>
         <div>Hard: you have to lift off from the pedals before getting the next value</div>
     </div>
-    
+
     <div id="axes-container">
         <div id="input-values"></div>
         <div id="output-values"></div>
@@ -67,8 +66,9 @@
     </div>
 
     <div class="score">Score: <span id="score">0</span> (average target hits    over the last minute)</div>
-
+ 
     <script>
+      
         function getRandomChoice(arr) {
             if (arr.length === 0) {
                 throw new Error("Array is empty");
@@ -213,6 +213,7 @@
 
             requestAnimationFrame(updateAxisValues);
         }
+      
     </script>
 </body>
 </html>
