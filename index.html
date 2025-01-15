@@ -90,7 +90,7 @@
                 return
             }
 
-            targetNumber = Math.floor(1 + Math.random() * 20)*5 
+            targetNumber = getRandomChoice([5,10,55,85, Math.floor(1 + Math.random() * 20)*5 ])
             document.getElementById('target-number').textContent = targetNumber;
         }
 
